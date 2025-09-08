@@ -3,6 +3,8 @@ class Spreadsheet {
         this.rows = 20; // Fixed to 20 rows
         this.columns = 8;
         this.selectedCell = null;
+        this.selectedCells = []; // Initialize selectedCells array
+        this.currentCell = null;
         this.columnWidths = {};
         this.cellData = {};
         this.appColumns = new Set();
@@ -20,7 +22,7 @@ class Spreadsheet {
         this.setupSearch();
         this.setupActionButtons();
         this.setupStateSaving();
-        this.switchVersion(1); // Initialize with Option 1
+        this.switchVersion(2); // Initialize with Option 2
         // No import functionality needed
     }
 
@@ -136,16 +138,21 @@ class Spreadsheet {
     setupEventListeners() {
         // Cell click events
         document.addEventListener('click', (e) => {
+            console.log('🖱️ Click detected on:', e.target);
             if (e.target.closest('.cell')) {
                 const cell = e.target.closest('.cell');
+                console.log('📱 Cell clicked');
                 this.selectCell(cell);
             } else if (e.target.closest('.column-header')) {
                 const header = e.target.closest('.column-header');
+                console.log('🎯 Column header clicked:', header.dataset.col);
                 this.selectColumn(header);
             } else if (e.target.closest('.row-header')) {
                 const header = e.target.closest('.row-header');
+                console.log('📊 Row header clicked');
                 this.selectRow(header);
             } else {
+                console.log('❌ Other element clicked, clearing selection');
                 this.clearSelection();
             }
         });
@@ -185,17 +192,169 @@ class Spreadsheet {
             }
         });
 
-        // Version toggle buttons and column headers
+        // Version toggle buttons
         document.addEventListener('click', (e) => {
             if (e.target.closest('.version-btn')) {
                 const btn = e.target.closest('.version-btn');
                 const version = parseInt(btn.dataset.version);
                 this.switchVersion(version);
-            } else if (e.target.closest('.column-header')) {
-                const header = e.target.closest('.column-header');
-                this.selectColumn(header);
             }
         });
+
+        // Test mode toggle
+        const testModeToggle = document.getElementById('test-mode-toggle');
+        if (testModeToggle) {
+            testModeToggle.addEventListener('click', () => {
+                console.log('🔄 Test mode toggle clicked');
+                // Toggle the active class
+                testModeToggle.classList.toggle('active');
+                
+                // Update all existing output cells based on new toggle state
+                this.updateOutputCellsForTestMode();
+            });
+        }
+    }
+
+    updateOutputCellsForTestMode() {
+        console.log('🔄 Updating output cells for test mode change');
+        
+        // Get current test mode state
+        const testModeToggle = document.getElementById('test-mode-toggle');
+        const isTestModeActive = testModeToggle && testModeToggle.classList.contains('active');
+        
+        console.log('📊 Test mode is now:', isTestModeActive ? 'ACTIVE' : 'INACTIVE');
+        
+        // Find all existing app column cells
+        const appCells = document.querySelectorAll('.app-column-cell');
+        
+        appCells.forEach(cell => {
+            const rowNum = parseInt(cell.dataset.row);
+            const shouldBeGreyed = rowNum > 10 && isTestModeActive;
+            
+            console.log(`🔧 Updating row ${rowNum}: shouldBeGreyed=${shouldBeGreyed}`);
+            
+            // Find the app display element
+            const appDisplay = cell.querySelector('.app-cell-display');
+            if (appDisplay) {
+                const contentSpan = appDisplay.querySelector('.app-cell-content span');
+                
+                if (shouldBeGreyed) {
+                    // Make it greyed out
+                    contentSpan.textContent = 'Locked';
+                    appDisplay.classList.add('greyed-output-cell');
+                    appDisplay.querySelector('.app-cell-content').classList.add('greyed-output');
+                    
+                    // Remove click handler by cloning and replacing the element
+                    const newAppDisplay = appDisplay.cloneNode(true);
+                    appDisplay.parentNode.replaceChild(newAppDisplay, appDisplay);
+                    
+                } else {
+                    // Make it functional
+                    contentSpan.textContent = 'Click to run';
+                    appDisplay.classList.remove('greyed-output-cell');
+                    appDisplay.querySelector('.app-cell-content').classList.remove('greyed-output');
+                    
+                    // Add click handler back
+                    const newAppDisplay = appDisplay.cloneNode(true);
+                    appDisplay.parentNode.replaceChild(newAppDisplay, appDisplay);
+                    
+                    // Find app name from column header
+                    const column = cell.dataset.col;
+                    const headerElement = document.querySelector(`[data-col="${column}"]`);
+                    const appName = headerElement && headerElement.dataset.customName ? headerElement.dataset.customName : 'App';
+                    
+                    newAppDisplay.addEventListener('click', () => {
+                        this.runAppInCell(cell, appName);
+                    });
+                }
+            }
+        });
+        
+        // Show/hide credit display based on test mode
+        const creditDisplay = document.getElementById('credit-display');
+        if (creditDisplay) {
+            if (isTestModeActive) {
+                // Hide credit display when test mode is ON
+                creditDisplay.style.display = 'none';
+                console.log('💰 Credit display hidden (test mode ON)');
+            } else {
+                // Show credit display when test mode is OFF
+                creditDisplay.style.display = 'flex';
+                console.log('💰 Credit display shown (test mode OFF)');
+            }
+        }
+        
+        // Update test mode text color based on state
+        const modeText = document.getElementById('mode-text');
+        if (modeText) {
+            if (isTestModeActive) {
+                // Active state - normal color
+                modeText.style.color = '#333';
+                console.log('🎨 Test mode text: active (dark)');
+            } else {
+                // Inactive state - lighter color
+                modeText.style.color = '#999';
+                console.log('🎨 Test mode text: inactive (light)');
+            }
+        }
+        
+        console.log('✅ Output cells updated for test mode change');
+        
+        // Update credit calculation when test mode changes
+        this.updateCreditCalculation();
+        
+        // Update credit tooltip based on test mode
+        this.updateCreditTooltip(isTestModeActive);
+    }
+
+    calculateTotalCredits() {
+        // Get current test mode state
+        const testModeToggle = document.getElementById('test-mode-toggle');
+        const isTestModeActive = testModeToggle && testModeToggle.classList.contains('active');
+        
+        // Find all app column cells
+        const appCells = document.querySelectorAll('.app-column-cell');
+        let emptyOutputCells = 0;
+        
+        appCells.forEach(cell => {
+            const rowNum = parseInt(cell.dataset.row);
+            
+            // Only count cells that should be processed based on test mode
+            if (isTestModeActive && rowNum > 10) {
+                return; // Skip rows 11-20 in test mode
+            }
+            
+            // Check if cell has output already
+            const hasOutput = cell.querySelector('.output-pill') || 
+                             cell.querySelector('.app-cell-content span')?.textContent === 'Generating...';
+            
+            if (!hasOutput) {
+                emptyOutputCells++;
+            }
+        });
+        
+        const totalCredits = emptyOutputCells * 20;
+        console.log(`💰 Credit calculation: ${emptyOutputCells} empty cells × 20 = ${totalCredits} credits`);
+        
+        return totalCredits;
+    }
+
+    updateCreditCalculation() {
+        const creditAmountSpan = document.getElementById('credit-amount');
+        if (creditAmountSpan) {
+            const totalCredits = this.calculateTotalCredits();
+            creditAmountSpan.textContent = totalCredits;
+            console.log(`💰 Credit display updated to: ${totalCredits} credits`);
+        }
+    }
+
+    updateCreditTooltip(isTestModeActive) {
+        const creditTooltip = document.getElementById('credit-tooltip');
+        if (creditTooltip) {
+            const rowRange = isTestModeActive ? '1-10' : '1-20';
+            creditTooltip.textContent = `Total cost for running rows ${rowRange}`;
+            console.log(`💬 Credit tooltip updated: rows ${rowRange}`);
+        }
     }
 
     setupKeyboardNavigation() {
@@ -398,18 +557,6 @@ class Spreadsheet {
         this.selectedCells = [cell];
     }
 
-    selectColumn(header) {
-        this.clearSelection();
-        const col = header.dataset.col;
-        const cells = document.querySelectorAll(`[data-col="${col}"]`);
-        cells.forEach(cell => {
-            cell.classList.add('selected');
-            this.selectedCells.push(cell);
-        });
-        
-        // Show column popover menu
-        this.showColumnPopover(header);
-    }
 
     selectRow(header) {
         this.clearSelection();
@@ -426,9 +573,11 @@ class Spreadsheet {
             this.currentCell.classList.remove('selected');
             this.currentCell = null;
         }
-        this.selectedCells.forEach(cell => {
-            cell.classList.remove('selected');
-        });
+        if (this.selectedCells && this.selectedCells.length > 0) {
+            this.selectedCells.forEach(cell => {
+                cell.classList.remove('selected');
+            });
+        }
         this.selectedCells = [];
     }
 
@@ -489,7 +638,21 @@ class Spreadsheet {
 
     addOutputPillsToColumn(column) {
         const cells = document.querySelectorAll(`[data-col="${column}"].app-column-cell`);
+        
+        // Check if test mode is active
+        const testModeToggle = document.getElementById('test-mode-toggle');
+        const isTestModeActive = testModeToggle && testModeToggle.classList.contains('active');
+        
         cells.forEach(cell => {
+            // If test mode is active, only process rows 1-10
+            if (isTestModeActive) {
+                const rowNum = parseInt(cell.dataset.row);
+                if (rowNum > 10) {
+                    console.log(`⏭️ Skipping row ${rowNum} in test mode`);
+                    return; // Skip rows 11-20 when test mode is active
+                }
+            }
+            
             // Find the existing app-cell-content span and change its text
             const existingSpan = cell.querySelector('.app-cell-content span');
             if (existingSpan) {
@@ -508,6 +671,9 @@ class Spreadsheet {
                     // Enable Import All button when output is generated
                     console.log('🎯 Output generated! Enabling Import All button');
                     this.enableImportAllButton();
+                    
+                    // Update credit calculation when output is generated
+                    this.updateCreditCalculation();
                 }, 5000);
             }
         });
@@ -1116,16 +1282,31 @@ class Spreadsheet {
         // Create app display with same structure as existing app cells
         const appDisplay = document.createElement('div');
         appDisplay.className = 'app-cell-display';
-        appDisplay.innerHTML = `
-            <div class="app-cell-content">
-                <span>Click to run</span>
-            </div>
-        `;
         
-        // Add click handler
-        appDisplay.addEventListener('click', () => {
-            this.runAppInCell(td, appName);
-        });
+        // Check if this is row 11-20 and test mode is active
+        const testModeToggle = document.getElementById('test-mode-toggle');
+        const isTestModeActive = testModeToggle && testModeToggle.classList.contains('active');
+        const isGreyedRow = row > 10 && isTestModeActive;
+        
+        if (isGreyedRow) {
+            appDisplay.innerHTML = `
+                <div class="app-cell-content greyed-output">
+                    <span>Locked</span>
+                </div>
+            `;
+            appDisplay.classList.add('greyed-output-cell');
+        } else {
+            appDisplay.innerHTML = `
+                <div class="app-cell-content">
+                    <span>Click to run</span>
+                </div>
+            `;
+            
+            // Add click handler only for non-greyed rows
+            appDisplay.addEventListener('click', () => {
+                this.runAppInCell(td, appName);
+            });
+        }
         
         td.appendChild(appDisplay);
         td.classList.add('app-column-cell');
@@ -2785,19 +2966,35 @@ class Spreadsheet {
                 // Remove existing content
                 cell.innerHTML = '';
                 
+                // Get row number from cell and check test mode
+                const rowNum = parseInt(cell.dataset.row);
+                const testModeToggle = document.getElementById('test-mode-toggle');
+                const isTestModeActive = testModeToggle && testModeToggle.classList.contains('active');
+                const isGreyedRow = rowNum > 10 && isTestModeActive;
+                
                 // Create app display
                 const appDisplay = document.createElement('div');
                 appDisplay.className = 'app-cell-display';
-                appDisplay.innerHTML = `
-                    <div class="app-cell-content">
-                        <span>Click to run</span>
-                    </div>
-                `;
                 
-                // Add click handler
-                appDisplay.addEventListener('click', () => {
-                    this.runAppInCell(cell, appName);
-                });
+                if (isGreyedRow) {
+                    appDisplay.innerHTML = `
+                        <div class="app-cell-content greyed-output">
+                            <span>Locked</span>
+                        </div>
+                    `;
+                    appDisplay.classList.add('greyed-output-cell');
+                } else {
+                    appDisplay.innerHTML = `
+                        <div class="app-cell-content">
+                            <span>Click to run</span>
+                        </div>
+                    `;
+                    
+                    // Add click handler only for non-greyed rows
+                    appDisplay.addEventListener('click', () => {
+                        this.runAppInCell(cell, appName);
+                    });
+                }
                 
                 cell.appendChild(appDisplay);
                 cell.classList.add('app-column-cell');
@@ -2807,6 +3004,9 @@ class Spreadsheet {
         // Track this column as having an app and check Run All button
         this.appColumns.add(column);
         this.checkRunAllButton();
+        
+        // Update credit calculation when new app column is added
+        this.updateCreditCalculation();
         
         // Show cost display when first app is added
         this.showCostDisplay();
@@ -3955,10 +4155,28 @@ class Spreadsheet {
 
     showOption2() {
         document.querySelector('.inline-test-mode').style.display = 'flex';
-        document.getElementById('run-all-info-option2').style.display = 'flex';
-        document.querySelector('.test-mode-toggle').style.display = 'flex';
-        this.greyOutRows11To20(); // Grey out rows 11-20 in Option 2
+        this.enableAllRows(); // Enable all rows including 11-20
         this.showTestModeToast(); // Show test mode toast with grey eye icon
+        
+        // Initialize credit display and text color based on test mode state
+        const testModeToggle = document.getElementById('test-mode-toggle');
+        const creditDisplay = document.getElementById('credit-display');
+        const modeText = document.getElementById('mode-text');
+        
+        if (testModeToggle && creditDisplay) {
+            const isTestModeActive = testModeToggle.classList.contains('active');
+            creditDisplay.style.display = isTestModeActive ? 'none' : 'flex';
+            console.log('💰 Credit display initialized:', isTestModeActive ? 'hidden' : 'shown');
+            
+            // Set initial text color
+            if (modeText) {
+                modeText.style.color = isTestModeActive ? '#333' : '#999';
+                console.log('🎨 Test mode text initialized:', isTestModeActive ? 'active (dark)' : 'inactive (light)');
+            }
+            
+            // Initialize credit tooltip
+            this.updateCreditTooltip(isTestModeActive);
+        }
     }
 
     showOption3() {
@@ -4012,21 +4230,28 @@ class Spreadsheet {
     }
 
     selectColumn(header) {
+        console.log('🔥 selectColumn called with header:', header, 'column:', header.dataset.col);
         this.clearSelection();
         const col = header.dataset.col;
         
         // Special functionality: clicking A, B, C headers transforms them and fills data
         if (col === 'A' || col === 'B' || col === 'C') {
+            console.log('🚀 Transforming column', col);
             this.handleColumnHeaderClick(header);
             return;
         }
         
+        console.log('📋 Selecting column', col);
         // Select all cells in the column
         const cells = document.querySelectorAll(`[data-col="${col}"]`);
         cells.forEach(cell => {
             cell.classList.add('selected');
             this.selectedCells.push(cell);
         });
+        
+        // Show column popover menu for columns D-H
+        console.log('🔧 Showing popover for column', col);
+        this.showColumnPopover(header);
     }
 
     handleColumnHeaderClick(header) {

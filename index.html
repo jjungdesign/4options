@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sheets - Spreadsheet Application</title>
-    <link rel="stylesheet" href="styles.css?v=1756328150">
+    <link rel="stylesheet" href="styles.css?v=1756328232">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -24,6 +24,10 @@
         </div>
         
         <div class="header-right">
+            <div class="credit-meter">
+                <i class="fas fa-coins"></i>
+                <span>990 Credits Available</span>
+            </div>
             <div class="avatar-container">
                 <div class="avatar">DK</div>
             </div>
@@ -39,35 +43,28 @@
         </div>
         
         <div class="action-buttons">
-            <div class="free-rows-toggle" id="free-rows-toggle" style="display: none;">
-                <span class="toggle-text">1-10 rows: 0 credits</span>
-            </div>
             <!-- Option 2 Test Mode Toggle -->
-            <div class="inline-test-mode" style="display: none;">
+            <div class="inline-test-mode" style="display: flex;">
                 <div class="test-mode-toggle-container">
-                    <div class="toggle-switch" id="test-mode-toggle">
+                    <div class="toggle-switch active" id="test-mode-toggle">
                         <div class="toggle-slider"></div>
                     </div>
                     <span class="mode-text" id="mode-text">Test mode</span>
+                    <div class="test-mode-tooltip">
+                        Run a test on the first 10 rows before scaling up
+                    </div>
                 </div>
             </div>
             
-            <!-- Option 4 Test Mode Pill -->
-            <div class="inline-test-mode-option4" style="display: none;">
-                <span class="test-mode-pill" id="test-mode-pill-option4"><span class="test-dot"></span> Test mode<i class="fas fa-chevron-down"></i></span>
-            </div>
             
-            <div class="run-all-info" id="run-all-info-option1" style="display: none;">
-                <span class="run-all-text" id="credit-text-option1"><strong>1-10 rows:</strong> 0 credits</span>
+            <div class="credit-display" id="credit-display" style="display: none;">
+                <span class="credit-text" id="credit-text-hover">
+                    <span id="credit-amount">800</span> Credits
+                    <div class="credit-tooltip" id="credit-tooltip">
+                        Total cost for running rows 1-20
+                    </div>
+                </span>
             </div>
-            <div class="run-all-info" id="run-all-info-option2" style="display: none;">
-                <span class="run-all-text" id="credit-text-option2"><strong>1-10 rows:</strong> 0 credits</span>
-            </div>
-            <div class="run-all-info" id="run-all-info-option3" style="display: none;">
-                <span class="test-mode-indicator" id="test-mode-indicator-option3" style="display: none;"><span class="test-dot"></span> Test mode</span>
-                <span class="run-all-text" id="credit-text-option3"><span class="credit-pill" id="credit-pill"><strong>Select rows</strong> <i class="fas fa-chevron-down"></i></span></span>
-            </div>
-            
             <button class="action-btn run-all-btn" id="run-all-btn" disabled>
                 <i class="fas fa-play"></i>
                 Run All
@@ -109,20 +106,9 @@
 
     <!-- Version Toggle -->
     <div class="version-toggle">
-        <button class="version-btn active" data-version="1">Option 1</button>
-        <button class="version-btn" data-version="2">Option 2</button>
-        <button class="version-btn" data-version="3">Option 3</button>
-        <button class="version-btn" data-version="4">Option 4</button>
+        <button class="version-btn active" data-version="2">Option 2</button>
     </div>
 
-    <!-- Test Mode Toggle (only visible in Option 2) -->
-    <div class="test-mode-toggle" style="display: none;">
-        <div class="test-mode-status">
-            <i class="fas fa-flask"></i>
-            <span>Test Mode</span>
-        </div>
-        <button class="test-mode-btn" id="test-mode-btn">Switch to Real Mode</button>
-    </div>
 
     <!-- Spreadsheet Container -->
     <div class="spreadsheet-container">
@@ -174,6 +160,6 @@
         </div>
     </div>
 
-         <script src="script.js?v=1756330300"></script>
+         <script src="script.js?v=1756330513"></script>
 </body>
 </html>
