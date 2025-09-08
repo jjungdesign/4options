@@ -1,6 +1,6 @@
 class Spreadsheet {
     constructor() {
-        this.rows = 200; // Changed from 10 to 200
+        this.rows = 20; // Fixed to 20 rows
         this.columns = 8;
         this.selectedCell = null;
         this.columnWidths = {};
@@ -20,6 +20,7 @@ class Spreadsheet {
         this.setupSearch();
         this.setupActionButtons();
         this.setupStateSaving();
+        this.switchVersion(1); // Initialize with Option 1
         // No import functionality needed
     }
 
@@ -30,8 +31,8 @@ class Spreadsheet {
         // Update header row with correct number of columns
         this.updateHeaderRow();
 
-        // Generate 200 empty data rows
-        for (let row = 1; row <= 200; row++) {
+        // Generate 20 empty data rows
+        for (let row = 1; row <= 20; row++) {
             const tr = document.createElement('tr');
             tr.className = 'data-row';
             tr.dataset.row = row;
@@ -181,6 +182,18 @@ class Spreadsheet {
                 const cell = e.target.closest('.cell');
                 this.selectCell(cell);
                 this.showContextMenu(e);
+            }
+        });
+
+        // Version toggle buttons and column headers
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.version-btn')) {
+                const btn = e.target.closest('.version-btn');
+                const version = parseInt(btn.dataset.version);
+                this.switchVersion(version);
+            } else if (e.target.closest('.column-header')) {
+                const header = e.target.closest('.column-header');
+                this.selectColumn(header);
             }
         });
     }
@@ -3894,6 +3907,174 @@ class Spreadsheet {
                 }
             }, { once: true });
         }, 100);
+    }
+
+    switchVersion(version) {
+        console.log(`Switching to version ${version}`);
+        
+        // Update active button
+        document.querySelectorAll('.version-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-version="${version}"]`).classList.add('active');
+        
+        // Hide all option-specific elements first
+        this.hideAllOptionElements();
+        
+        // Show elements based on version
+        switch(version) {
+            case 1:
+                this.showOption1();
+                break;
+            case 2:
+                this.showOption2();
+                break;
+            case 3:
+                this.showOption3();
+                break;
+            case 4:
+                this.showOption4();
+                break;
+        }
+    }
+
+    hideAllOptionElements() {
+        // Hide all option-specific elements
+        document.querySelectorAll('.free-rows-toggle').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.inline-test-mode').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.inline-test-mode-option4').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.run-all-info').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.test-mode-toggle').forEach(el => el.style.display = 'none');
+    }
+
+    showOption1() {
+        document.getElementById('free-rows-toggle').style.display = 'flex';
+        document.getElementById('run-all-info-option1').style.display = 'flex';
+        this.enableAllRows();
+    }
+
+    showOption2() {
+        document.querySelector('.inline-test-mode').style.display = 'flex';
+        document.getElementById('run-all-info-option2').style.display = 'flex';
+        document.querySelector('.test-mode-toggle').style.display = 'flex';
+        this.greyOutRows11To20(); // Grey out rows 11-20 in Option 2
+        this.showTestModeToast(); // Show test mode toast with grey eye icon
+    }
+
+    showOption3() {
+        document.getElementById('run-all-info-option3').style.display = 'flex';
+        this.enableAllRows();
+    }
+
+    showOption4() {
+        document.querySelector('.inline-test-mode-option4').style.display = 'flex';
+        document.getElementById('run-all-info-option2').style.display = 'flex';
+        this.enableAllRows();
+    }
+
+    greyOutRows11To20() {
+        // Grey out rows 11-20
+        for (let row = 11; row <= 20; row++) {
+            const rowElement = document.querySelector(`[data-row="${row}"]`);
+            if (rowElement) {
+                rowElement.classList.add('row-greyed-out');
+            }
+        }
+    }
+
+    enableAllRows() {
+        // Remove greyed out class from all rows
+        document.querySelectorAll('.row-greyed-out').forEach(row => {
+            row.classList.remove('row-greyed-out');
+        });
+    }
+
+    showTestModeToast() {
+        // Create and show test mode toast notification with grey eye icon
+        const toast = document.createElement('div');
+        toast.className = 'test-mode-load-toast show';
+        toast.innerHTML = `
+            <div class="toast-title">
+                <i class="fas fa-eye" style="color: #666;"></i>
+                You are in test mode
+            </div>
+            <div class="toast-body">
+                Test your data processing on the first 10 rows before scaling to all data.
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Remove toast after 5 seconds
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
+
+    selectColumn(header) {
+        this.clearSelection();
+        const col = header.dataset.col;
+        
+        // Special functionality: clicking A, B, C headers transforms them and fills data
+        if (col === 'A' || col === 'B' || col === 'C') {
+            this.handleColumnHeaderClick(header);
+            return;
+        }
+        
+        // Select all cells in the column
+        const cells = document.querySelectorAll(`[data-col="${col}"]`);
+        cells.forEach(cell => {
+            cell.classList.add('selected');
+            this.selectedCells.push(cell);
+        });
+    }
+
+    handleColumnHeaderClick(header) {
+        const col = header.dataset.col;
+        
+        // Transform header text and fill column with sample data
+        if (col === 'A') {
+            header.textContent = 'Email';
+            this.fillColumnWithSampleData('A', 'Email');
+        } else if (col === 'B') {
+            header.textContent = 'Contact';
+            this.fillColumnWithSampleData('B', 'Contact');
+        } else if (col === 'C') {
+            header.textContent = 'Company';
+            this.fillColumnWithSampleData('C', 'Company');
+        }
+    }
+
+    fillColumnWithSampleData(column, type) {
+        // Fill all 20 rows with sample data
+        const maxRows = 20;
+        
+        for (let row = 1; row <= maxRows; row++) {
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${column}"]`);
+            if (cell) {
+                const input = cell.querySelector('input');
+                if (input) {
+                    // Generate sample data based on type
+                    let sampleData = '';
+                    if (type === 'Email') {
+                        sampleData = `sample${row}@email.com`;
+                    } else if (type === 'Contact') {
+                        sampleData = `Contact ${row}`;
+                    } else if (type === 'Company') {
+                        sampleData = `Company ${row}`;
+                    }
+                    
+                    input.value = sampleData;
+                    
+                    // Save to data object
+                    const cellKey = `${row}-${column}`;
+                    this.cellData[cellKey] = sampleData;
+                }
+            }
+        }
+        
+        // Save state
+        this.saveState();
     }
 
 }
