@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple 20 Row Spreadsheet</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="spreadsheet-container">
+        <div class="spreadsheet-wrapper">
+            <table class="spreadsheet" id="spreadsheet">
+                <thead>
+                    <tr class="header-row">
+                        <th class="corner-cell"></th>
+                        <th class="column-header" data-col="A">A</th>
+                        <th class="column-header" data-col="B">B</th>
+                        <th class="column-header" data-col="C">C</th>
+                        <th class="column-header" data-col="D">D</th>
+                        <th class="column-header" data-col="E">E</th>
+                        <th class="column-header" data-col="F">F</th>
+                        <th class="column-header" data-col="G">G</th>
+                        <th class="column-header" data-col="H">H</th>
+                    </tr>
+                </thead>
+                <tbody id="spreadsheet-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        console.log("🌟 INLINE SCRIPT: Creating 20 rows");
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const tbody = document.getElementById('spreadsheet-body');
+            tbody.innerHTML = '';
+
+            // Create exactly 20 rows
+            for (let row = 1; row <= 20; row++) {
+                console.log("Creating row", row);
+                const tr = document.createElement('tr');
+                tr.className = 'data-row';
+                
+                // Row header
+                const th = document.createElement('th');
+                th.className = 'row-header';
+                th.textContent = row;
+                tr.appendChild(th);
+
+                // 8 data cells
+                for (let col = 0; col < 8; col++) {
+                    const td = document.createElement('td');
+                    td.className = 'cell';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = '';
+                    
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                }
+
+                tbody.appendChild(tr);
+            }
+            
+            console.log("✅ CREATED EXACTLY", tbody.children.length, "ROWS");
+        });
+    </script>
+</body>
+</html>
