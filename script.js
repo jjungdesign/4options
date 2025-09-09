@@ -249,23 +249,35 @@ class Spreadsheet {
                     appDisplay.parentNode.replaceChild(newAppDisplay, appDisplay);
                     
                 } else {
-                    // Make it functional
-                    contentSpan.textContent = 'Click to run';
-                    appDisplay.classList.remove('greyed-output-cell');
-                    appDisplay.querySelector('.app-cell-content').classList.remove('greyed-output');
+                    // Check if this cell already has an output pill
+                    const hasOutputPill = appDisplay.querySelector('.output-pill');
                     
-                    // Add click handler back
-                    const newAppDisplay = appDisplay.cloneNode(true);
-                    appDisplay.parentNode.replaceChild(newAppDisplay, appDisplay);
-                    
-                    // Find app name from column header
-                    const column = cell.dataset.col;
-                    const headerElement = document.querySelector(`[data-col="${column}"]`);
-                    const appName = headerElement && headerElement.dataset.customName ? headerElement.dataset.customName : 'App';
-                    
-                    newAppDisplay.addEventListener('click', () => {
-                        this.runAppInCell(cell, appName);
-                    });
+                    if (hasOutputPill) {
+                        // Keep the output pill as is, just remove greyed styling
+                        appDisplay.classList.remove('greyed-output-cell');
+                        appDisplay.querySelector('.app-cell-content').classList.remove('greyed-output');
+                        console.log(`🔓 Un-greyed row ${rowNum} app cell but kept output pill`);
+                    } else {
+                        // Make it functional
+                        contentSpan.textContent = 'Click to run';
+                        appDisplay.classList.remove('greyed-output-cell');
+                        appDisplay.querySelector('.app-cell-content').classList.remove('greyed-output');
+                        
+                        // Add click handler back
+                        const newAppDisplay = appDisplay.cloneNode(true);
+                        appDisplay.parentNode.replaceChild(newAppDisplay, appDisplay);
+                        
+                        // Find app name from column header
+                        const column = cell.dataset.col;
+                        const headerElement = document.querySelector(`[data-col="${column}"]`);
+                        const appName = headerElement && headerElement.dataset.customName ? headerElement.dataset.customName : 'App';
+                        
+                        newAppDisplay.addEventListener('click', () => {
+                            this.runAppInCell(cell, appName);
+                        });
+                        
+                        console.log(`🔓 Un-greyed row ${rowNum} app cell with "Click to run" text`);
+                    }
                 }
             }
         });
@@ -351,7 +363,7 @@ class Spreadsheet {
     updateCreditTooltip(isTestModeActive) {
         const creditTooltip = document.getElementById('credit-tooltip');
         if (creditTooltip) {
-            const rowRange = isTestModeActive ? '1-10' : '1-20';
+            const rowRange = isTestModeActive ? '1-10' : '11-20';
             creditTooltip.textContent = `Total cost for running rows ${rowRange}`;
             console.log(`💬 Credit tooltip updated: rows ${rowRange}`);
         }
@@ -651,6 +663,13 @@ class Spreadsheet {
                     console.log(`⏭️ Skipping row ${rowNum} in test mode`);
                     return; // Skip rows 11-20 when test mode is active
                 }
+            }
+            
+            // Check if this cell already has an output pill
+            const hasOutputPill = cell.querySelector('.output-pill');
+            if (hasOutputPill) {
+                console.log(`⏭️ Skipping row ${cell.closest('tr').dataset.row} - output already exists`);
+                return; // Skip this cell if output already exists
             }
             
             // Find the existing app-cell-content span and change its text
